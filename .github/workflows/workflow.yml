@@ -1,0 +1,64 @@
+name: CI/CD
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'README.md'       # Ignora mudanças apenas no README
+      - 'docs/**'         # Ignora qualquer arquivo dentro da pasta 'docs'
+      - 'LICENSE'         # Ignora o arquivo de licença
+      - 'CONTRIBUTING.md' # Ignora o guia de contribuição
+
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - 'README.md'       # Ignora mudanças apenas no README
+      - 'docs/**'         # Ignora qualquer arquivo dentro da pasta 'docs'
+      - 'LICENSE'         # Ignora o arquivo de licença
+      - 'CONTRIBUTING.md' # Ignora o guia de contribuição
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v5
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Executar testes
+        run: mvn -B verify --file pom.xml
+
+  cd:
+    needs: ci
+
+    if: github.ref == 'refs/heads/main'
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Fazer checkout do código
+        uses: actions/checkout@v5
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Gerar JAR para deploy
+        run: mvn -B package --file pom.xml -DskipTests
+
+      - name: Upload JAR para deploy
+        uses: actions/upload-artifact@v5
+        with:
+          name: app-jar
+          path: target/*.jar
+
